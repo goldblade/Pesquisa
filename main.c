@@ -40,7 +40,7 @@ MYSQL* mysql_config()
 
 MYSQL_RES* mysql_sql_query(MYSQL *conn, char *query_sql)
 {
-   // send the query to the database
+   // enviando a query para o banco de dados
    if (mysql_query(conn, query_sql))
    {
       printf("Erro na MySQL query : %s\n", mysql_error(conn));
@@ -86,27 +86,33 @@ MYSQL_RES* mysql_sql_query(MYSQL *conn, char *query_sql)
  * da um tempo ao usuario para visualisar informacao na tela antes de proseguir para outro comando
  */
 void tempo() {
-    system("ping 127.0.0.1 -n 5 -w 3000 > nul");
+    system("ping 127.0.0.1 -n 5 -w 2000 > nul");
 }
-
-
 
 void cadastro_pesquisa() 
 {
 	char nome[200];
 	char query[255];
     MYSQL *conn;
-	MYSQL_RES *res;	
     conn = mysql_config(); 
     printf("Digite o nome para a pesquisa: ");
 	scanf(" %[^\n]", nome);
-	sprintf(query, "INSERT INTO pesquisas (nome, data_cad) VALUES (%s, CURDATE())", nome);
-	res = mysql_sql_query(conn, query);
+	/*
+	 * Montando a query sql
+	 *
+	 * Insere dentro da tabela pesquisa nas colunas nome e data_cad os valores nome obtido no scanf acima e salvo no
+     * vetor de caracteres nome e pega a data corrente do servidor de banco de dados
+     * 
+     */
+	sprintf(query, "INSERT INTO pesquisa (nome, data_cad) VALUES ('%s', CURDATE())", nome);
+	/*
+	 * Passando para a funcao mysql_sql_query o endereco do ponteiro conn do tipo MYSQL
+     * e a query sql montada acima
+	 */
+    mysql_sql_query(conn, query);
 	printf("\nPesquisa Cadastrada com sucesso!\n");
-	tempo();
-	mysql_free_result(res);
-	mysql_close(conn);
-
+	mysql_close(conn);//fecha a conexao aberta - liberando recursos
+	tempo();//funcao que da um tempo para exibir a mensagem ao usuario
 }
 
 void imprimeMenu() {
@@ -127,7 +133,7 @@ void imprimeMenu() {
         printf("|             Escolha uma opcao                |\n");
         printf("|                                              |\n");
         printf("| 1: CADASTRAR PESQUISA                        |\n");
-        printf("| 2: EXIBIR REGISTROS                          |\n");
+        printf("| 2: CADASTRAR CANDIDATOS                      |\n");
         printf("| 3: SAIR DO PROGRAMA                          |\n");
         printf("|______________________________________________|\n");
         scanf("%d", &opcao);
