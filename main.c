@@ -1,23 +1,12 @@
 #include <stdio.h>
-
 #ifdef __WIN32__
 	#include <windows.h>
 #endif
-
 #include <stdlib.h>
 #include <strings.h>
-//#include <winsock.h> //necessario para compilar junto com o mysql usando o codeblocks
 #include <mysql/mysql.h> //biblioteca responsavel para conexao com o banco de dados
+#include <time.h> //biblioteca para lidar com datas
 
-// just going to input the general details and not the port numbers
-struct con_detalhes
-{
-    char *server;
-    char *user;
-    char *password;
-    char *database;
-};
-//MYSQL* mysql_config(struct con_detalhes mysql_detalhes) 
 MYSQL* mysql_config()
 {
 	//Constantes para conexao do banco de dados
@@ -27,10 +16,7 @@ MYSQL* mysql_config()
     const char* database = "pesquisa";
     // first of all create a mysql instance and initialize the variables within
     MYSQL *conn = mysql_init(NULL);
-    
-     
     // connect to the database with the details attached.
-    //if (!mysql_real_connect(conn,mysql_detalhes.server, mysql_detalhes.user, mysql_detalhes.password, mysql_detalhes.database, 0, NULL, 0)) {
     if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) {
        printf("Erro de Conexao : %s\n", mysql_error(conn));
        exit(1);
@@ -115,6 +101,47 @@ void cadastro_pesquisa()
 	tempo();//funcao que da um tempo para exibir a mensagem ao usuario
 }
 
+int seleciona_pesquisa()
+{
+    MYSQL *conn; // Ponteiro conn do tipo MYSQL
+    MYSQL_RES *res; // Ponteiro res do tipo MYSQL_RES - recebe os resultados
+    MYSQL_ROW row; // row do tipo MYSQL_ROW - resultados linha por linha
+    conn = mysql_config(); //Configura e inicia conexao com o MYSQL
+    int idpesquisa = 0;
+    /*
+     * seleciona todos as colunas da tabela pesquisa ordenado pela data_cad em ordem DESC e coloca no ponteiro res
+     */
+    res = mysql_sql_query(conn, "SELECT idpesquisa, nome, DATE_FORMAT(data_cad, '%d/%m/%Y') FROM pesquisa ORDER BY data_cad DESC");
+    #ifdef __WIN32__
+           system("cls");
+    #endif
+    #ifdef __linux__
+           system("clean");
+    #endif
+    printf("PESQUISAS CADASTRADAS:\n\n");
+    if (res) {
+       printf("ID | DATA         | NOME\n");
+       while ((row = mysql_fetch_row(res)) !=NULL) { 
+             printf("%s  | %s   | %s\n", row[0], row[2], row[1]); //row[0] = idpesquisa, row[2] = data_cad, row[1] = nome
+       }
+       printf("Selecione a pesquisa que deseja cadastrar candidatos a partir do seu ID ");
+       scanf("%d", &idpesquisa);
+       return idpesquisa;
+    } else {
+        printf("Nenhuma pesquisa cadastrada!\n");
+        tempo();
+        return idpesquisa;
+    }
+    
+}
+
+void cadastro_candidatos()
+{
+     int id_pesquisa;
+     id_pesquisa = seleciona_pesquisa();
+     system("pause"); 
+}
+
 void imprimeMenu() {
     int opcao = -1;
     //while (opcao != 3) {
@@ -139,12 +166,13 @@ void imprimeMenu() {
         scanf("%d", &opcao);
         switch(opcao) {
             case 1:
-                opcao = 3;
+                //opcao = 3;
                 cadastro_pesquisa();
 				imprimeMenu();
                 break;
             case 2:
-                printf("escolheu 2");
+                cadastro_candidatos();
+                imprimeMenu();
                 break;
             case 3:
                 printf("Saindo do programa - Adeus!\n");
