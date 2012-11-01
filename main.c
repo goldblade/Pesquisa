@@ -23,7 +23,7 @@ MYSQL* mysql_config()
 	//Constantes para conexao do banco de dados
     const char* server = "127.0.0.1";
     const char* user = "root";
-    const char* password = "super123";
+    const char* password = "";//alterar aqui 
     const char* database = "pesquisa";
     // first of all create a mysql instance and initialize the variables within
     MYSQL *conn = mysql_init(NULL);
@@ -78,26 +78,32 @@ MYSQL_RES* mysql_sql_query(MYSQL *conn, char *query_sql)
 //  mysql_close(conn);
 
 
+/**
+ * Funcao tempo
+ *
+ * funcao com o comando ping 127.0.0.1 -n 5 -w 3000 > null
+ * executa um ping com um tempo de 3000 ms
+ * da um tempo ao usuario para visualisar informacao na tela antes de proseguir para outro comando
+ */
+void tempo() {
+    system("ping 127.0.0.1 -n 5 -w 3000 > nul");
+}
 
 
 
 void cadastro_pesquisa() 
 {
 	char nome[200];
-	char sql[255];
+	char query[255];
     MYSQL *conn;
 	MYSQL_RES *res;	
-    conn = mysql_config();    
+    conn = mysql_config(); 
     printf("Digite o nome para a pesquisa: ");
 	scanf(" %[^\n]", nome);
-	//montar a string com os valores capturados antes
-	sql = putc();
-	if (res = mysql_sql_query(conn, "INSERT INTO pesquisas (nome, data_cad) VALUES (%s, CURDATE())", nome)) {
-		printf("\nPesquisa Cadastrada com sucesso!\n");
-		tempo();
-	} else {
-		printf("\nNao foi possivel cadastrar a pesquisa\n");
-	}
+	sprintf(query, "INSERT INTO pesquisas (nome, data_cad) VALUES (%s, CURDATE())", nome);
+	res = mysql_sql_query(conn, query);
+	printf("\nPesquisa Cadastrada com sucesso!\n");
+	tempo();
 	mysql_free_result(res);
 	mysql_close(conn);
 
@@ -151,16 +157,6 @@ void inserir() {
     
 }
 
-/**
- * Funcao tempo
- *
- * funcao com o comando ping 127.0.0.1 -n 5 -w 3000 > null
- * executa um ping com um tempo de 3000 ms
- * da um tempo ao usuario para visualisar informacao na tela antes de proseguir para outro comando
- */
-void tempo() {
-    system("ping 127.0.0.1 -n 5 -w 3000 > nul");
-}
 
 
 int main(int argc, char *argv[])
