@@ -91,7 +91,7 @@ void cadastro_pesquisa()
     printf("Digite o nome para a pesquisa: ");
 	scanf(" %[^\n]", nome);
 	//montar a string com os valores capturados antes
-	sql = putc();
+	
 	if (res = mysql_sql_query(conn, "INSERT INTO pesquisas (nome, data_cad) VALUES (%s, CURDATE())", nome)) {
 		printf("\nPesquisa Cadastrada com sucesso!\n");
 		tempo();
