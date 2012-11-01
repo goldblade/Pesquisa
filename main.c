@@ -18,22 +18,24 @@ MYSQL* mysql_config()
     MYSQL *conn = mysql_init(NULL);
     // connect to the database with the details attached.
     if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) {
-       printf("Erro de Conexao : %s\n", mysql_error(conn));
-       exit(1);
+    	printf("Erro de Conexao : %s\n", mysql_error(conn));
+       	exit(1);
     }
     return conn;
 }
 
 MYSQL_RES* mysql_sql_query(MYSQL *conn, char *query_sql)
 {
-   // enviando a query para o banco de dados
-   if (mysql_query(conn, query_sql))
-   {
-      printf("Erro na MySQL query : %s\n", mysql_error(conn));
-      exit(1);
-   }
- 
-   return mysql_use_result(conn);
+
+	// enviando a query para o banco de dados
+   	if (mysql_query(conn, query_sql)) 
+	{
+		printf("Erro na MySQL query : %s\n", mysql_error(conn));
+      	exit(1);
+   	}
+	
+	return mysql_use_result(conn);
+
 }
  
 
@@ -71,8 +73,9 @@ MYSQL_RES* mysql_sql_query(MYSQL *conn, char *query_sql)
  * executa um ping com um tempo de 3000 ms
  * da um tempo ao usuario para visualisar informacao na tela antes de proseguir para outro comando
  */
-void tempo() {
-    system("ping 127.0.0.1 -n 5 -w 2000 > nul");
+void tempo() 
+{
+	system("ping 127.0.0.1 -n 5 -w 2000 > nul");
 }
 
 void cadastro_pesquisa() 
@@ -103,7 +106,7 @@ void cadastro_pesquisa()
 
 int seleciona_pesquisa()
 {
-    MYSQL *conn; // Ponteiro conn do tipo MYSQL
+	MYSQL *conn; // Ponteiro conn do tipo MYSQL
     MYSQL_RES *res; // Ponteiro res do tipo MYSQL_RES - recebe os resultados
     MYSQL_ROW row; // row do tipo MYSQL_ROW - resultados linha por linha
     conn = mysql_config(); //Configura e inicia conexao com o MYSQL
@@ -113,90 +116,101 @@ int seleciona_pesquisa()
      */
     res = mysql_sql_query(conn, "SELECT idpesquisa, nome, DATE_FORMAT(data_cad, '%d/%m/%Y') FROM pesquisa ORDER BY data_cad DESC");
     #ifdef __WIN32__
-           system("cls");
+    	system("cls");
     #endif
     #ifdef __linux__
-           system("clean");
+    	system("clean");
     #endif
     printf("PESQUISAS CADASTRADAS:\n\n");
     if (res) {
-       printf("ID | DATA         | NOME\n");
-       while ((row = mysql_fetch_row(res)) !=NULL) { 
-             printf("%s  | %s   | %s\n", row[0], row[2], row[1]); //row[0] = idpesquisa, row[2] = data_cad, row[1] = nome
-       }
-       printf("Selecione a pesquisa que deseja cadastrar candidatos a partir do seu ID ");
-       scanf("%d", &idpesquisa);
-       return idpesquisa;
-    } else {
-        printf("Nenhuma pesquisa cadastrada!\n");
-        tempo();
-        return idpesquisa;
-    }
+		printf("ID | DATA         | NOME\n");
+       	while ((row = mysql_fetch_row(res)) !=NULL) { 
+        	printf("%s  | %s   | %s\n", row[0], row[2], row[1]); //row[0] = idpesquisa, row[2] = data_cad, row[1] = nome
+       	}
+       	printf("Selecione a pesquisa que deseja cadastrar candidatos a partir do seu ID ");
+       	scanf("%d", &idpesquisa);
+       	
+		return idpesquisa;
     
+	} else {
+    	printf("Nenhuma pesquisa cadastrada!\n");
+        tempo();
+        
+		return idpesquisa;
+    
+	}
+
+	mysql_free_resulta(res);
+	mysql_close(conn);
+
 }
 
 void cadastro_candidatos()
 {
-     int id_pesquisa;
-     id_pesquisa = seleciona_pesquisa();
-     system("pause"); 
+	int id_pesquisa;
+	char nome[255];
+	int numero;
+	MYSQL *conn;
+	char query[255];
+    id_pesquisa = seleciona_pesquisa();
+	if (id_pesquisa != 0) {
+		printf("Digite o nome para o candidato: ");
+		scanf(" %[^\n]", nome);
+		printf("\nDigite o numero para o candidato: ");
+		scanf("%d", &numero);
+		conn = mysql_config();
+		sprintf(query, "INSERT INTO candidatos (nome, numero, pesquisa_idpesquisa) VALUES ('%s', '%d', '%d')", nome, numero, id_pesquisa);
+		mysql_sql_query(conn, query);
+		printf("Candidato cadastrado com sucesso!\n");
+		tempo();
+	}
+    
 }
 
 void imprimeMenu() {
-    int opcao = -1;
+	int opcao = -1;
     //while (opcao != 3) {
-		#ifdef __WIN32__
-	    	system("cls");
-		#endif
-		#ifdef __linux__
-		    system("clear");
-		#endif       
+	#ifdef __WIN32__
+		system("cls");
+	#endif
+	#ifdef __linux__
+		system("clear");
+	#endif       
 
-        printf(" ______________________________________________\n");
-        printf("|                                              |\n");
-        printf("|       Trabalho de LTP1 - C com MySql         |\n");
-        printf("|       por Eduardo Junior e Mario Montino     |\n");
-        printf("|______________________________________________|\n");
-        printf("|             Escolha uma opcao                |\n");
-        printf("|                                              |\n");
-        printf("| 1: CADASTRAR PESQUISA                        |\n");
-        printf("| 2: CADASTRAR CANDIDATOS                      |\n");
-        printf("| 3: SAIR DO PROGRAMA                          |\n");
-        printf("|______________________________________________|\n");
-        scanf("%d", &opcao);
-        switch(opcao) {
-            case 1:
-                //opcao = 3;
-                cadastro_pesquisa();
-				imprimeMenu();
-                break;
-            case 2:
-                cadastro_candidatos();
-                imprimeMenu();
-                break;
-            case 3:
-                printf("Saindo do programa - Adeus!\n");
-                exit(0);
-                break;
-        }
+    printf(" ______________________________________________\n");
+    printf("|                                              |\n");
+    printf("|       Trabalho de LTP1 - C com MySql         |\n");
+    printf("|       por Eduardo Junior e Mario Montino     |\n");
+    printf("|______________________________________________|\n");
+    printf("|             Escolha uma opcao                |\n");
+    printf("|                                              |\n");
+    printf("| 1: CADASTRAR PESQUISA                        |\n");
+    printf("| 2: CADASTRAR CANDIDATOS                      |\n");
+    printf("| 3: SAIR DO PROGRAMA                          |\n");
+    printf("|______________________________________________|\n");
+    scanf("%d", &opcao);
+    switch(opcao) {
+    	case 1:
+        	//opcao = 3;
+            cadastro_pesquisa();
+			imprimeMenu();
+            break;
+        case 2:
+        	cadastro_candidatos();
+            imprimeMenu();
+            break;
+        case 3:
+        	printf("Saindo do programa - Adeus!\n");
+            exit(0);
+            break;
+	}
     //}
+
 }
-
-
-
-
-void inserir() {
-    
-
-    
-}
-
-
 
 int main(int argc, char *argv[])
 {
-    imprimeMenu();
+	imprimeMenu();
     getchar();
     return 0;
 }
-
