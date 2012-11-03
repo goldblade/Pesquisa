@@ -165,7 +165,7 @@ int seleciona_pesquisa()
        	while ((row = mysql_fetch_row(res)) !=NULL) { 
         	printf("%s  | %s   | %s\n", row[0], row[2], row[1]); //row[0] = idpesquisa, row[2] = data_cad, row[1] = nome
        	}
-       	printf("Selecione a pesquisa que deseja cadastrar candidatos a partir do seu ID: ");
+       	printf("Selecione uma pesquisa a partir do seu ID: ");
        	scanf("%d", &idpesquisa);
        	
 		return idpesquisa;
@@ -181,6 +181,40 @@ int seleciona_pesquisa()
 	mysql_free_resulta(res);
 	mysql_close(conn);
 
+}
+
+void alterar_pesquisa()
+{
+    char *nome;
+    char *cidade;
+    char *estado;
+    char opcao = 'n';
+    int idpesquisa();
+    idpesquisa = seleciona_pesquisa();
+    if (idpesquisa != 0) {
+        nome = (char*)malloc(255*sizeof(char));
+        cidade = (char*)malloc(255*sizeof(char));
+        estado = (char*)malloc(255*sizeof(char));
+        printf("Deseja alterar o nome?: S/N\n");
+        scanf("%c", &opcao);
+        if (opcao == 's') || (opcao == 'S') {
+           printf("Digite um novo nome para a pesquisa: ");
+           scanf(" %[^\n]", nome);
+        }
+        printf("Deseja alterar a cidade?: S/N\n");
+        scanf("%c", &opcao);
+        if (opcao == 's') || (opcao == 'S') {
+           printf("Digite um novo novo nome para a cidade: ");
+           scanf(" %[^\n]", cidade);
+        }
+        printf("Deseja alterar o estado?: S/N\n");
+        scanf("%c", &opcao);
+        if (opcao == 's') || (opcao == 'S') {
+            printf("Digite um novo nome para o estado: ");
+            scanf(" %[^\n]", estado); 
+        }
+        
+    }
 }
 
 void cadastro_candidatos()
@@ -262,6 +296,15 @@ void inicia_pesquisa()
     }
 }
 
+void exibe_resultados()
+{
+    int idpesquisa();
+    idpesquisa = seleciona_pesquisa();
+    if (idpesquisa != 0) {
+        
+    }
+}
+
 void imprimeMenu() {
 	int opcao = -1;
     //while (opcao != 3) {
@@ -280,26 +323,45 @@ void imprimeMenu() {
     printf("|             Escolha uma opcao                |\n");
     printf("|                                              |\n");
     printf("| 1: CADASTRAR PESQUISA                        |\n");
-    printf("| 2: CADASTRAR CANDIDATOS                      |\n");
-    printf("| 3: INICIA PESQUISA                           |\n");
-    printf("| 5: SAIR DO PROGRAMA                          |\n");
+    printf("| 2: ALTERAR PESQUISA                          |\n");
+    printf("| 3: DELETAR PEQUISA                           |\n");
+    printf("|______________________________________________|\n");
+    printf("|                                              |\n");
+    printf("| 4: CADASTRAR CANDIDATOS                      |\n");
+    printf("| 5: ALTERAR CANDIDATOS                        |\n");
+    printf("| 6: DELETAR CANDIDATOS                        |\n");
+    printf("|______________________________________________|\n");
+    printf("|                                              |\n");
+    printf("| 7: INICIA PESQUISA                           |\n");
+    printf("| 8: EXIBIR RESULTADOS                         |\n");
+    printf("| 9: SAIR DO PROGRAMA                          |\n");
     printf("|______________________________________________|\n");
     scanf("%d", &opcao);
     switch(opcao) {
-    	case 1:
-        	//opcao = 3;
+        case 1:
+            //Cadastrar pequisa
             cadastro_pesquisa();
 			imprimeMenu();
             break;
         case 2:
+            //Alterar Pesquisa
+            alterar_pesquisa();
+            imprimeMenu();
+            break;
+        case 4:
+            //Cadastrar Candidatos
         	cadastro_candidatos();
             imprimeMenu();
             break;
-        case 3:
+        case 7:
             inicia_pesquisa();
             imprimeMenu();
             break;
-        case 5:
+        case 8:
+            exibir_resultados();
+            imprimeMenu();
+            break;
+        case 9:
         	printf("Saindo do programa - Adeus!\n");
             exit(0);
             break;
