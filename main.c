@@ -3,9 +3,10 @@
 	#include <windows.h>
 #endif
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <mysql/mysql.h> //biblioteca responsavel para conexao com o banco de dados
 #include <time.h> //biblioteca para lidar com datas
+
 
 MYSQL* mysql_config()
 {
@@ -19,7 +20,7 @@ MYSQL* mysql_config()
     // connect to the database with the details attached.
     if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) {
     	printf("Erro de Conexao : %s\n", mysql_error(conn));
-       	exit(1);
+       	//exit(1);
     }
     return conn;
 }
@@ -31,41 +32,13 @@ MYSQL_RES* mysql_sql_query(MYSQL *conn, char *query_sql)
    	if (mysql_query(conn, query_sql)) 
 	{
 		printf("Erro na MySQL query : %s\n", mysql_error(conn));
-      	exit(1);
+      	//exit(1);
    	}
 	
 	return mysql_use_result(conn);
 
 }
  
-
-/*
- MYSQL *conn;		// the connection
-  MYSQL_RES *res;	// the results
-  MYSQL_ROW row;	// the results row (line by line)
- 
-  struct connection_details mysqlD;
-  mysqlD.server = "localhost";  // where the mysql database is
-  mysqlD.user = "mysqlusername";		// the root user of mysql	
-  mysqlD.password = "mysqlpassword"; // the password of the root user in mysql
-  mysqlD.database = "mysql";	// the databse to pick
- 
-  // connect to the mysql database
-  conn = mysql_connection_setup(mysqlD);
- 
-  // assign the results return to the MYSQL_RES pointer
-  res = mysql_perform_query(conn, "show tables");
- 
-  printf("MySQL Tables in mysql database:\n");
-  while ((row = mysql_fetch_row(res)) !=NULL)
-      printf("%s\n", row[0]);
- 
-  /* clean up the database result set */
-//  mysql_free_result(res);
-  /* clean up the database link */
-//  mysql_close(conn);
-
-
 /**
  * Funcao tempo
  *
@@ -163,9 +136,9 @@ int seleciona_pesquisa()
     if (res) {
 		printf("ID | DATA         | NOME\n");
        	while ((row = mysql_fetch_row(res)) !=NULL) { 
-        	printf("%s  | %s   | %s\n", row[0], row[2], row[1]); //row[0] = idpesquisa, row[2] = data_cad, row[1] = nome
+        	printf("%s | %s   | %s\n", row[0], row[2], row[1]); //row[0] = idpesquisa, row[2] = data_cad, row[1] = nome
        	}
-       	printf("Selecione uma pesquisa a partir do seu ID: ");
+       	printf("\nSelecione uma pesquisa a partir do seu ID: ");
        	scanf("%d", &idpesquisa);
        	
 		return idpesquisa;
@@ -185,35 +158,82 @@ int seleciona_pesquisa()
 
 void alterar_pesquisa()
 {
+    FILE *fp;
     char *nome;
     char *cidade;
-    char *estado;
-    char opcao = 'n';
-    int idpesquisa();
+    char *estado;    
+    char opcao;
+    char query[1024];
+    int idpesquisa;
+    char *id;
+    id = (char*)malloc(255*sizeof(char));
+    //query = (char*)malloc(255*sizeof(char));
+   	MYSQL *conn; // Ponteiro conn do tipo MYSQL
+    conn = mysql_config(); //Configura e inicia conexao com o MYSQL
     idpesquisa = seleciona_pesquisa();
     if (idpesquisa != 0) {
         nome = (char*)malloc(255*sizeof(char));
         cidade = (char*)malloc(255*sizeof(char));
         estado = (char*)malloc(255*sizeof(char));
-        printf("Deseja alterar o nome?: S/N\n");
-        scanf("%c", &opcao);
-        if (opcao == 's') || (opcao == 'S') {
-           printf("Digite um novo nome para a pesquisa: ");
+        printf("Deseja alterar o nome?: S/N ");
+        scanf(" %[^\n]", &opcao);
+        if ((opcao == 's') || (opcao == 'S')) {
+           printf("\nDigite um novo nome para a pesquisa: ");
            scanf(" %[^\n]", nome);
+        } else {
+            nome = NULL;
         }
-        printf("Deseja alterar a cidade?: S/N\n");
-        scanf("%c", &opcao);
-        if (opcao == 's') || (opcao == 'S') {
-           printf("Digite um novo novo nome para a cidade: ");
+        printf("\nDeseja alterar a cidade?: S/N ");
+        scanf(" %[^\n]", &opcao);
+        if ((opcao == 's') || (opcao == 'S')) {
+           printf("\nDigite um novo novo nome para a cidade: ");
            scanf(" %[^\n]", cidade);
+        } else {
+            cidade = NULL;
         }
-        printf("Deseja alterar o estado?: S/N\n");
-        scanf("%c", &opcao);
-        if (opcao == 's') || (opcao == 'S') {
-            printf("Digite um novo nome para o estado: ");
+        printf("\nDeseja alterar o estado?: S/N ");
+        scanf(" %[^\n]", &opcao);
+        if ((opcao == 's') || (opcao == 'S')) {
+            printf("\nDigite um novo nome para o estado: ");
             scanf(" %[^\n]", estado); 
+        } else {
+            estado = NULL;
         }
-        
+       /*
+        * Montando a string sql para a query
+        */
+        sprintf(id, "%d", idpesquisa);
+        strcat(query, "UPDATE pesquisa SET ");
+        if (nome) { 
+           strcat(query, " nome='");
+           strcat(query, nome);
+           strcat(query, "' ");
+           if ((cidade) || (estado)) strcat(query, ", "); 
+        }
+        if (cidade) {
+            strcat(query, " cidade='");
+            strcat(query, cidade);
+            strcat(query, "' ");
+            if (estado) strcat(query, ", ");
+        }
+        if (estado) {
+            strcat(query, " estado='");
+            strcat(query, estado);
+            strcat(query, "' ");
+        }
+
+        strcat(query, " WHERE idpesquisa = '");
+        strcat(query, id);
+        strcat(query, "' ");
+        if ((nome) || (cidade) || (estado)) {
+          mysql_sql_query(conn, query);
+        }
+        system("pause");
+        free(nome);
+        free(cidade);
+        free(estado);
+        mysql_close(conn);//fecha conexao com o banco de dados
+       
     }
 }
 
@@ -298,7 +318,7 @@ void inicia_pesquisa()
 
 void exibe_resultados()
 {
-    int idpesquisa();
+    int idpesquisa;
     idpesquisa = seleciona_pesquisa();
     if (idpesquisa != 0) {
         
@@ -358,7 +378,7 @@ void imprimeMenu() {
             imprimeMenu();
             break;
         case 8:
-            exibir_resultados();
+            //exibir_resultados();
             imprimeMenu();
             break;
         case 9:

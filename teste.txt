@@ -1,0 +1,1 @@
+UPDATE pesquisa SET  WHERE idpesquisa = '33' 
