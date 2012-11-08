@@ -145,10 +145,12 @@ int seleciona_pesquisa()
 	qtdrows = mysql_num_rows(res);
 
     if ((res) && (qtdrows > 0)) {
-		printf("ID | DATA         | NOME - [CIDADE - ESTADO]  \n");
+		printf(" ID | DATA         | NOME                 | CIDADE            | ESTADO         \n");
+		printf("-------------------------------------------------------------------------------\n");
        	while ((row = mysql_fetch_row(res)) !=NULL) { 
 			//row[0] = idpesquisa, row[2] = data_cad, row[1] = nome, row[3] = cidade, row[4] = estado
-			printf("%s  | %s   | %s - [%s - %s]     \n", row[0], row[2], row[1], row[3], row[4]);        	
+			printf(" %-3s| %-12s | %-20s | %-17s | %-14s     \n", row[0], row[2], row[1], row[3], row[4]);        	
+			printf("-------------------------------------------------------------------------------\n");
        	}
        	printf("\nSelecione uma pesquisa a partir do seu ID ou digite -1 para voltar ao menu principal: ");
        	scanf("%d", &idpesquisa);
@@ -293,22 +295,107 @@ void cadastro_candidatos()
 }
 
 
-int seleciona_candidato() 
+int seleciona_candidato(int idpesquisa) 
 {
-
+	MYSQL *conn; // Ponteiro conn do tipo MYSQL
+    MYSQL_RES *res; // Ponteiro res do tipo MYSQL_RES - recebe os resultados
+    MYSQL_ROW row; // row do tipo MYSQL_ROW - resultados linha por linha
+    conn = mysql_config(); //Configura e inicia conexao com o MYSQL
+	char *query;
+	int qtdrows;
+	int idcandidato = 0;
+	query = (char*)malloc(255*sizeof(char));
+	if (idpesquisa) {
+		sprintf(query, "SELECT c.idcandidatos, c.nome, p.nome AS pesquisa_nome, p.cidade, p.estado, c.numero FROM candidatos AS c LEFT JOIN pesquisa AS p ON c.pesquisa_idpesquisa = p.idpesquisa WHERE pesquisa_idpesquisa = '%d' AND opcao_padrao = 'n' ORDER BY nome ", idpesquisa);
+	} else {
+		sprintf(query, "SELECT c.idcandidatos, c.nome, p.nome AS pesquisa_nome, p.cidade, p.estado, c.numero FROM candidatos AS c LEFT JOIN pesquisa AS p ON c.pesquisa_idpesquisa = p.idpesquisa WHERE opcao_padrao = 'n' ORDER BY pesquisa_nome, nome ASC");
+	}
+	res = mysql_sql_query(conn, query);
+ 	#ifdef __WIN32__
+		system("cls");
+    #endif
+    #ifdef __linux__
+    	system("clear");
+    #endif
+    printf("CANDIDATOS CADASTRADOS:\n\n");
+	qtdrows = mysql_num_rows(res);
+    if ((res) && (qtdrows > 0)) {
+		printf(" ID | NOME                       | PESQUISA              |        CIDADE         |     ESTADO     | NUMERO \n");
+		printf("-----------------------------------------------------------------------------------------------------------\n");
+		while ((row = mysql_fetch_row(res)) !=NULL) { 
+			//row[0] = idcandidatos, row[1] = nome
+			printf(" %-3s| %-26s | %-21s | %-21s | %-14s | %-6s \n", row[0], row[1], row[2], row[3], row[4], row[5]);
+		printf("-----------------------------------------------------------------------------------------------------------\n");
+       	}
+       	printf("\nSelecione um candidato a partir do seu ID ou digite -1 para voltar ao menu principal: ");
+       	scanf("%d", &idcandidato);       	
+		return idcandidato;		
+	} else {
+		printf("Nenhum candidato cadastrado!\n");
+        tempo();
+		return idcandidato;
+	}	
 }
 
 
 void alterar_candidato() 
 {
+	MYSQL *conn;
 	int idpesquisa;
 	int idcandidato;
+	char *nome;
+	char *query;
 	idpesquisa = seleciona_pesquisa();
 	if ((idpesquisa != 0) && (idpesquisa != -1)) {
-		
+		nome = (char*)malloc(255*sizeof(char));
+		query = (char*)malloc(255*sizeof(char));
+		conn = mysql_config();
+		idcandidato = seleciona_candidato(idpesquisa);
+		if ((idcandidato != 0) && (idcandidato != -1)) {
+			printf("Digite o novo nome: ");
+			scanf(" %[^\n]", nome);
+			sprintf(query, "UPDATE candidatos SET nome='%s' WHERE idcandidatos = '%d'", nome, idcandidato);
+			mysql_sql_query(conn, query);			
+			printf("\nALTERACAO REALIZADA COM SUCESSO! AGUARDE O PROGRAMA VOLTAR AO MENU PRINCIPAL\n");
+			free(nome);
+			free(query);
+			mysql_close(conn);			
+			tempo();
+			#ifdef __WIN32__
+                system("cls");
+            #endif
+            #ifdef __linux__
+                system("clear");
+            #endif		
+		}
 	} 
 }
 
+void remover_candidato()
+{
+	int idcandidato;
+	MYSQL *conn;
+	char *query;
+	char opcao;
+	idcandidato = seleciona_candidato(0);//passando 0 como id torna falso o idpesquisa
+	if ((idcandidato != 0) && (idcandidato != -1)) {
+		printf("Tem certeza que deseja realmente excluir esse candidato? S/N ");
+		scanf(" %[^\n]", &opcao);
+		if ((opcao == 's') || (opcao == 'S')) {
+			conn = mysql_config();
+			query = (char*)malloc(255*sizeof(char));
+			sprintf(query, "DELETE FROM candidatos WHERE idcandidatos = '%d'", idcandidato);
+			mysql_sql_query(conn, query);
+			free(query);
+			mysql_close(conn);
+			printf("\nREGISTRO REMOVIDO COM SUCESSO! AGUARDE O PROGRAMA RETONAR AO MENU PRINCIPAL\n");
+			tempo();
+		}
+	} else {
+		imprimeMenu();
+	}
+	
+}
 
 /**
  * PARA MARIO :D
@@ -408,6 +495,11 @@ void imprimeMenu() {
 		case 5:
 			//Alterar Candidato
 			alterar_candidato();
+			imprimeMenu();
+			break;
+		case 6:
+			//deletar candidato
+			remover_candidato();
 			imprimeMenu();
 			break;
         case 7:
