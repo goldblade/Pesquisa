@@ -7,12 +7,14 @@
 #include <mysql/mysql.h> //biblioteca responsavel para conexao com o banco de dados
 #include <time.h> //biblioteca para lidar com datas
 
+void imprimeMenu();//þrototipo da funcao imprimeMenu
+void remover_pesquisa();//prototipo da funcao remover_pesquisa
 
 MYSQL* mysql_config()
 {
 	//Constantes para conexao do banco de dados
     const char* server = "127.0.0.1";
-    const char* user = "root";
+    const char* user = "pesquisa";
     const char* password = "";//alterar aqui 
     const char* database = "pesquisa";
     // first of all create a mysql instance and initialize the variables within
@@ -20,7 +22,7 @@ MYSQL* mysql_config()
     // connect to the database with the details attached.
     if (!mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) {
     	printf("Erro de Conexao : %s\n", mysql_error(conn));
-       	//exit(1);
+       	exit(1);
     }
     return conn;
 }
@@ -32,10 +34,11 @@ MYSQL_RES* mysql_sql_query(MYSQL *conn, char *query_sql)
    	if (mysql_query(conn, query_sql)) 
 	{
 		printf("Erro na MySQL query : %s\n", mysql_error(conn));
-      	//exit(1);
+      	exit(1);
    	}
 	
-	return mysql_use_result(conn);
+	//return mysql_use_result(conn);
+	return mysql_store_result(conn);
 
 }
  
@@ -48,7 +51,12 @@ MYSQL_RES* mysql_sql_query(MYSQL *conn, char *query_sql)
  */
 void tempo() 
 {
-	system("ping 127.0.0.1 -n 5 -w 2000 > nul");
+	#ifdef __WIN32__
+		system("ping 127.0.0.1 -n 5 -w 2000 > nul");
+	#endif
+	#ifdef __linux__
+		system("ping 127.0.0.1 -c 5 -w 2000 > nul");
+	#endif
 }
 
 void cadastro_pesquisa() 
@@ -121,24 +129,28 @@ int seleciona_pesquisa()
     MYSQL_RES *res; // Ponteiro res do tipo MYSQL_RES - recebe os resultados
     MYSQL_ROW row; // row do tipo MYSQL_ROW - resultados linha por linha
     conn = mysql_config(); //Configura e inicia conexao com o MYSQL
+	int qtdrows;
     int idpesquisa = 0;
     /*
      * seleciona todos as colunas da tabela pesquisa ordenado pela data_cad em ordem DESC e coloca no ponteiro res
      */
-    res = mysql_sql_query(conn, "SELECT idpesquisa, nome, DATE_FORMAT(data_cad, '%d/%m/%Y') FROM pesquisa ORDER BY data_cad DESC");
+    res = mysql_sql_query(conn, "SELECT idpesquisa, nome, DATE_FORMAT(data_cad, '%d/%m/%Y'), cidade, estado FROM pesquisa ORDER BY data_cad DESC");
     #ifdef __WIN32__
     	system("cls");
     #endif
     #ifdef __linux__
-    	system("clean");
+    	system("clear");
     #endif
     printf("PESQUISAS CADASTRADAS:\n\n");
-    if (res) {
-		printf("ID | DATA         | NOME\n");
+	qtdrows = mysql_num_rows(res);
+
+    if ((res) && (qtdrows > 0)) {
+		printf("ID | DATA         | NOME - [CIDADE - ESTADO]  \n");
        	while ((row = mysql_fetch_row(res)) !=NULL) { 
-        	printf("%s | %s   | %s\n", row[0], row[2], row[1]); //row[0] = idpesquisa, row[2] = data_cad, row[1] = nome
+			//row[0] = idpesquisa, row[2] = data_cad, row[1] = nome, row[3] = cidade, row[4] = estado
+			printf("%s  | %s   | %s - [%s - %s]     \n", row[0], row[2], row[1], row[3], row[4]);        	
        	}
-       	printf("\nSelecione uma pesquisa a partir do seu ID: ");
+       	printf("\nSelecione uma pesquisa a partir do seu ID ou digite -1 para voltar ao menu principal: ");
        	scanf("%d", &idpesquisa);
        	
 		return idpesquisa;
@@ -158,83 +170,82 @@ int seleciona_pesquisa()
 
 void alterar_pesquisa()
 {
-    FILE *fp;
+
     char *nome;
     char *cidade;
     char *estado;    
     char opcao;
     char query[1024];
     int idpesquisa;
-    char *id;
-    id = (char*)malloc(255*sizeof(char));
-    //query = (char*)malloc(255*sizeof(char));
    	MYSQL *conn; // Ponteiro conn do tipo MYSQL
     conn = mysql_config(); //Configura e inicia conexao com o MYSQL
     idpesquisa = seleciona_pesquisa();
-    if (idpesquisa != 0) {
-        nome = (char*)malloc(255*sizeof(char));
-        cidade = (char*)malloc(255*sizeof(char));
-        estado = (char*)malloc(255*sizeof(char));
+    if ((idpesquisa != 0) && (idpesquisa != -1)) {
+        
+        
+
         printf("Deseja alterar o nome?: S/N ");
         scanf(" %[^\n]", &opcao);
         if ((opcao == 's') || (opcao == 'S')) {
-           printf("\nDigite um novo nome para a pesquisa: ");
-           scanf(" %[^\n]", nome);
-        } else {
-            nome = NULL;
-        }
+			nome = (char*)malloc(255*sizeof(char));
+        	printf("\nDigite um novo nome para a pesquisa: ");
+            scanf(" %[^\n]", nome);
+			sprintf(query, "UPDATE pesquisa SET nome='%s' WHERE idpesquisa = '%d'", nome, idpesquisa);
+			mysql_sql_query(conn, query);
+			free(nome);
+        } 
         printf("\nDeseja alterar a cidade?: S/N ");
         scanf(" %[^\n]", &opcao);
         if ((opcao == 's') || (opcao == 'S')) {
-           printf("\nDigite um novo novo nome para a cidade: ");
-           scanf(" %[^\n]", cidade);
-        } else {
-            cidade = NULL;
-        }
+			cidade = (char*)malloc(255*sizeof(char));
+        	printf("\nDigite um novo novo nome para a cidade: ");
+        	scanf(" %[^\n]", cidade);
+			sprintf(query, "UPDATE pesquisa SET cidade='%s' WHERE idpesquisa = '%d'", cidade, idpesquisa);
+			mysql_sql_query(conn, query);
+			free(cidade);
+        } 
         printf("\nDeseja alterar o estado?: S/N ");
         scanf(" %[^\n]", &opcao);
         if ((opcao == 's') || (opcao == 'S')) {
+			estado = (char*)malloc(50*sizeof(char));
             printf("\nDigite um novo nome para o estado: ");
             scanf(" %[^\n]", estado); 
-        } else {
-            estado = NULL;
-        }
-       /*
-        * Montando a string sql para a query
-        */
-        sprintf(id, "%d", idpesquisa);
-        strcat(query, "UPDATE pesquisa SET ");
-        if (nome) { 
-           strcat(query, " nome='");
-           strcat(query, nome);
-           strcat(query, "' ");
-           if ((cidade) || (estado)) strcat(query, ", "); 
-        }
-        if (cidade) {
-            strcat(query, " cidade='");
-            strcat(query, cidade);
-            strcat(query, "' ");
-            if (estado) strcat(query, ", ");
-        }
-        if (estado) {
-            strcat(query, " estado='");
-            strcat(query, estado);
-            strcat(query, "' ");
-        }
+			sprintf(query, "UPDATE pesquisa SET estado='%s' WHERE idpesquisa = '%d'", estado, idpesquisa);
+			mysql_sql_query(conn, query);
+			free(estado);
+        } 
+        mysql_close(conn);//fecha conexao com o banco de dados       
+    } else {
+		imprimeMenu();
+	}
+}
 
-        strcat(query, " WHERE idpesquisa = '");
-        strcat(query, id);
-        strcat(query, "' ");
-        if ((nome) || (cidade) || (estado)) {
-          mysql_sql_query(conn, query);
-        }
-        system("pause");
-        free(nome);
-        free(cidade);
-        free(estado);
-        mysql_close(conn);//fecha conexao com o banco de dados
-       
-    }
+void remover_pesquisa()
+{
+	int idpesquisa;
+	MYSQL *conn;
+	char *query;
+	char opcao;
+	conn = mysql_config(); //Configura e inicia conexao com o MYSQL 			
+	idpesquisa = seleciona_pesquisa();
+	if ((idpesquisa != 0) && (idpesquisa != -1)) {
+		printf("Deseja realmente excluir essa pesquisa? S/N");
+		scanf(" %[^\n]", &opcao);
+		if ((opcao == 's') || (opcao == 'S')) {
+			query = (char*)malloc(255*sizeof(char));//allocando memoria dinamica			
+			sprintf(query, "DELETE FROM pesquisa WHERE idpesquisa = '%d' ", idpesquisa);
+			mysql_sql_query(conn, query);
+			mysql_close(conn);//fecha conexao com o banco de dados
+			printf("\nREGISTRO REMOVIDO COM SUCESSO! AGUARDE O PROGRAMA RETONAR AO MENU PRINCIPAL\n");
+			tempo();
+		} else {
+			printf("Operacao cancelada, retornando ao menu principal em alguns segundos. Aguarde!\n");
+			tempo();			
+		}
+		
+	} else {
+		imprimeMenu();
+	}
 }
 
 void cadastro_candidatos()
@@ -246,7 +257,7 @@ void cadastro_candidatos()
 	MYSQL *conn;
 	char *query;
     idpesquisa = seleciona_pesquisa();
-	if (idpesquisa != 0) {
+	if ((idpesquisa != 0) && (idpesquisa != -1)) {
         opcao = 's';
         while ((opcao == 's') || (opcao == 'S')) {
             nome = (char*)malloc(255*sizeof(char)); //Allocando memoria dinamica
@@ -274,13 +285,29 @@ void cadastro_candidatos()
             free(nome);
             free(query);
         }
-        
+        printf("\nAGUARDE O PROGRAMA RETONAR AO MENU PRINCIPAL\n");
 		tempo();
 		
 	}
     
 }
 
+
+int seleciona_candidato() 
+{
+
+}
+
+
+void alterar_candidato() 
+{
+	int idpesquisa;
+	int idcandidato;
+	idpesquisa = seleciona_pesquisa();
+	if ((idpesquisa != 0) && (idpesquisa != -1)) {
+		
+	} 
+}
 
 
 /**
@@ -368,11 +395,21 @@ void imprimeMenu() {
             alterar_pesquisa();
             imprimeMenu();
             break;
+		case 3:
+			//Excluir Pesquisa
+			remover_pesquisa();
+			imprimeMenu();
+			break;
         case 4:
             //Cadastrar Candidatos
         	cadastro_candidatos();
             imprimeMenu();
             break;
+		case 5:
+			//Alterar Candidato
+			alterar_candidato();
+			imprimeMenu();
+			break;
         case 7:
             inicia_pesquisa();
             imprimeMenu();
@@ -393,6 +430,6 @@ void imprimeMenu() {
 int main(int argc, char *argv[])
 {
 	imprimeMenu();
-    getchar();
+    //getchar();
     return 0;
 }
