@@ -6,6 +6,7 @@
 #include <string.h>
 #include <mysql/mysql.h> //biblioteca responsavel para conexao com o banco de dados
 #include <time.h> //biblioteca para lidar com datas
+#include <ctype.h>
 
 void imprimeMenu();//þrototipo da funcao imprimeMenu
 void remover_pesquisa();//prototipo da funcao remover_pesquisa
@@ -424,10 +425,109 @@ void remover_candidato()
 void inicia_pesquisa()
 {
     int idpesquisa;
+	MYSQL *conn;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	char *query;
+	char *nome;
+	char *telefone;
+	char *bairro;
+	char resp_pesquisa;
+	char mora_cidade;
+	int i;
+	int idcandidato;
+	int qtdrows;
+	
     idpesquisa = seleciona_pesquisa(); // Chama a funcao seleciona_pequisa e retorna o Inteiro com o ID da pesquisa
-    if (idpesquisa != 0) {
-        
-    }
+
+	if ((idpesquisa != 0) && (idpesquisa != -1)) {
+		conn = mysql_config();
+		query = (char*)malloc(255*sizeof(char));
+		
+		//verificar se existe candidatos cadastrados para a pesquisa 
+		sprintf(query, "SELECT idcandidatos FROM candidatos WHERE opcao_padrao = 'n' AND pesquisa_idpesquisa = '%d' ", idpesquisa);
+		res = mysql_sql_query(conn, query);
+		qtdrows = mysql_num_rows(res);
+	
+		if (qtdrows) {
+			sprintf(query, "SELECT nome, estado FROM pesquisa WHERE idpesquisa = '%d' ", idpesquisa);
+			res = mysql_sql_query(conn, query);
+			row = mysql_fetch_row(res);
+			//free(query);
+			mora_cidade = 't';
+			i = 0;
+			while ((mora_cidade != 's') && (mora_cidade != 'S') && (mora_cidade != 'n') && (mora_cidade != 'N')) {
+
+				if (i > 0) {
+			
+					#ifdef __WIN32__
+						system("cls");
+					#endif
+					#ifdef __linux__
+						system("clear");
+					#endif
+					printf("\nOpcao escolhida invalida, tente novamente\n\n");
+
+				}
+
+				printf("O Eleitor mora na cidade %s - %s? S/N: ", row[0], row[1]);
+				scanf(" %[^\n]", &mora_cidade);
+			
+				i++;
+
+			}
+			resp_pesquisa = 't';
+			i = 0;
+			while ((resp_pesquisa != 's') && (resp_pesquisa != 'S') && (resp_pesquisa != 'N') && (resp_pesquisa != 'n')) {
+			
+				if (i > 0) {
+			
+					#ifdef __WIN32__
+						system("cls");
+					#endif
+					#ifdef __linux__
+						system("clear");
+					#endif
+					printf("\nOpcao escolhida invalida, tente novamente\n\n");
+
+				}
+
+				printf("\nO Eleitor deseja responder a pesquisa? S/N ");
+				scanf(" %[^\n]", &resp_pesquisa);
+				i++;
+
+			}
+
+			if ((resp_pesquisa == 's') || (resp_pesquisa == 'S')) {
+
+				nome = (char*)malloc(255*sizeof(char));
+				printf("\nDigite o nome do eleitor: ");
+				scanf(" %[^\n]", nome);
+				telefone = (char*)malloc(25*sizeof(char));
+				printf("\nDigite o telefone: ");
+				scanf(" %[^\n]", telefone);
+				bairro = (char*)malloc(255*sizeof(char));
+				printf("\nDigite o bairro: ");
+				scanf(" %[^\n]", bairro);
+			
+				sprintf(query, "INSERT INTO eleitores (nome, telefone, bairro, vota_cidade, resp_pesquisa, pesquisa_idpesquisa) VALUES ('%s', '%s', '%s', '%c', '%c', '%d') ", nome, telefone, bairro, toupper(mora_cidade), toupper(resp_pesquisa), idpesquisa);
+				res = mysql_sql_query(conn, query);
+			
+				idcandidato = seleciona_candidato(idpesquisa);
+
+			} else {
+				//nao deseja responder a pesquisa
+			}
+
+		} else {
+			//nao tem candidatos cadastrados		
+			printf("\nNao existe candidatos cadastrados para essa pesquisa escolha outra...\n");
+			tempo();
+			inicia_pesquisa();
+		}
+    
+	}
+
 }
 
 void exibe_resultados()
